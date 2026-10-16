@@ -22,7 +22,7 @@ void main() {
   late DateTime now;
 
   setUp(() async {
-    db = await AppDatabase.open(name: inMemoryDatabasePath, factory: databaseFactoryFfiNoIsolate);
+    db = await AppDatabase.openWith(databaseFactoryFfiNoIsolate);
     storage = FakeSessionStorage();
     now = DateTime(2025, 10, 20, 10);
     final audit = AuditLog(db);
@@ -64,6 +64,14 @@ void main() {
     await session.checkInactivity();
     expect(session.isLoggedIn, isFalse);
     expect(session.consumeExpiredFlag(), isTrue);
+  });
+
+  test('armazenamento seguro ilegível leva ao login em vez de travar o app', () async {
+    storage.unreadable = true;
+    await session.restore();
+    expect(session.restoring, isFalse);
+    expect(session.isLoggedIn, isTrue, reason: 'sessão atual em memória não é afetada');
+    expect(storage.userId, isNull);
   });
 
   test('recuperação de senha pelo telefone', () async {

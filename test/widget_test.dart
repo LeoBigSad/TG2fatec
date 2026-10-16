@@ -20,7 +20,7 @@ void main() {
   Future<void> pumpApp(WidgetTester tester) async {
     await tester.runAsync(() async {
       await initializeDateFormatting('pt_BR');
-      final db = await AppDatabase.open(name: inMemoryDatabasePath, factory: databaseFactoryFfiNoIsolate);
+      final db = await AppDatabase.openWith(databaseFactoryFfiNoIsolate);
       final audit = AuditLog(db);
       session = SessionController(
         users: UserRepository(db),

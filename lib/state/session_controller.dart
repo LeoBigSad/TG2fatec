@@ -52,7 +52,14 @@ class SessionController extends ChangeNotifier {
 
   Future<void> restore() async {
     try {
-      final saved = await _storage.read();
+      final ({int userId, DateTime lastActivity})? saved;
+      try {
+        saved = await _storage.read();
+      } catch (_) {
+        // Armazenamento seguro ilegível (ex.: chaves do Keystore perdidas).
+        await _storage.clear();
+        return;
+      }
       if (saved == null) return;
       if (_clock().difference(saved.lastActivity) > inactivityTimeout) {
         await _storage.clear();

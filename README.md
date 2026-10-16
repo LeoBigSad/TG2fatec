@@ -59,6 +59,7 @@ lib/
 | RF20 Relatórios em PDF e planilha | Visão Geral › exportar, Menu › Exportar relatório |
 | RNF1 Cadastro, login, hash de senha, expiração por inatividade | `state/session_controller.dart` |
 | RNF2 LGPD: consentimento, exclusão da conta e dos dados | Cadastro, Perfil › Informações Pessoais |
+| RNF2 Criptografia em repouso: banco SQLCipher (AES-256), chave aleatória no Android Keystore | `data/app_database.dart`, `services/database_key_store.dart` |
 | RNF6 Log de auditoria imutável | tabela `audit_logs` (triggers bloqueiam UPDATE/DELETE) |
 
 ## Pendências que dependem do servidor
@@ -67,5 +68,3 @@ lib/
   mostra o código na própria tela.
 - **Login com Google.** Precisa de um projeto no Google Cloud/Firebase.
 - **Sincronização, backup e disponibilidade** (RNF3–RNF5).
-- **Criptografia do banco local em repouso** (ex.: SQLCipher). Hoje a sessão
-  é guardada no Android Keystore, mas o arquivo SQLite fica sem criptografia.

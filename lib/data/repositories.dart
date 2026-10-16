@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqlite_api.dart';
 
 import 'category_catalog.dart';
 import 'models/models.dart';

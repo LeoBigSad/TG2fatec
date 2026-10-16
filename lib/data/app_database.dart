@@ -1,21 +1,57 @@
 import 'package:path/path.dart' as p;
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart' as cipher;
+import 'package:sqflite_sqlcipher/sqlite_api.dart';
 
-/// Banco SQLite local do aplicativo.
+/// Banco SQLite local do aplicativo, criptografado com SQLCipher (AES-256).
 abstract final class AppDatabase {
   static const _version = 1;
+  static const _fileName = 'tg2fatec_secure.db';
 
-  static Future<Database> open({String name = 'tg2fatec.db', DatabaseFactory? factory}) async {
-    final f = factory ?? databaseFactory;
-    final path = name == inMemoryDatabasePath ? name : p.join(await f.getDatabasesPath(), name);
-    return f.openDatabase(
+  /// Banco sem criptografia usado pela versão inicial do app.
+  static const _legacyFileName = 'tg2fatec.db';
+
+  /// Abre o banco criptografado com [key]. Com [keyIsNew], um banco existente
+  /// foi criado com outra chave (perdida) e é descartado.
+  static Future<Database> openEncrypted(String key, {required bool keyIsNew}) async {
+    final dir = await cipher.getDatabasesPath();
+    final path = p.join(dir, _fileName);
+    if (keyIsNew) await cipher.deleteDatabase(path);
+    await _migrateLegacy(p.join(dir, _legacyFileName), path, key);
+    return cipher.openDatabase(
       path,
-      options: OpenDatabaseOptions(
-        version: _version,
-        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-        onCreate: (db, _) => _create(db),
-      ),
+      password: key,
+      version: _version,
+      onConfigure: _configure,
+      onCreate: (db, _) => _create(db),
     );
+  }
+
+  /// Banco sem criptografia aberto por outra fábrica; usado nos testes (FFI).
+  static Future<Database> openWith(DatabaseFactory factory, {String path = inMemoryDatabasePath}) =>
+      factory.openDatabase(
+        path,
+        options: OpenDatabaseOptions(version: _version, onConfigure: _configure, onCreate: (db, _) => _create(db)),
+      );
+
+  static Future<void> _configure(Database db) => db.execute('PRAGMA foreign_keys = ON');
+
+  /// Copia o banco antigo, sem criptografia, para o banco criptografado e
+  /// apaga o arquivo antigo, para não sobrar cópia legível dos dados.
+  static Future<void> _migrateLegacy(String legacyPath, String targetPath, String key) async {
+    if (!await cipher.databaseExists(legacyPath)) return;
+    if (!await cipher.databaseExists(targetPath)) {
+      final legacy = await cipher.openDatabase(legacyPath);
+      try {
+        String quoted(String s) => "'${s.replaceAll("'", "''")}'";
+        await legacy.execute('ATTACH DATABASE ${quoted(targetPath)} AS encrypted KEY ${quoted(key)}');
+        await legacy.rawQuery("SELECT sqlcipher_export('encrypted')");
+        await legacy.execute('PRAGMA encrypted.user_version = $_version');
+        await legacy.execute('DETACH DATABASE encrypted');
+      } finally {
+        await legacy.close();
+      }
+    }
+    await cipher.deleteDatabase(legacyPath);
   }
 
   static Future<void> _create(Database db) async {

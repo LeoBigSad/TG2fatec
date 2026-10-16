@@ -22,7 +22,8 @@ class TermsPage extends StatelessWidget {
     ),
     (
       'Como protegemos os dados',
-      'Sua senha é armazenada apenas como hash criptográfico (PBKDF2), e a sessão é guardada no '
+      'Seus dados ficam em um banco criptografado (AES-256) no próprio aparelho. Sua senha é '
+          'armazenada apenas como hash criptográfico (PBKDF2), e a chave do banco e a sessão ficam no '
           'armazenamento seguro do Android (Keystore). A sessão expira após 15 minutos sem uso. '
           'Operações importantes são registradas em um log de auditoria.'
     ),
