@@ -53,9 +53,16 @@ class _ImportPageState extends State<ImportPage> {
         setState(() => _error = 'Nenhum lançamento válido foi encontrado no arquivo.');
       }
     } on StatementFormatException catch (e) {
-      setState(() => _error = e.message);
+      // Descarta a prévia do arquivo anterior para não misturar com o erro.
+      setState(() {
+        _preview = null;
+        _error = e.message;
+      });
     } catch (_) {
-      setState(() => _error = 'Não foi possível abrir o arquivo. Tente novamente.');
+      setState(() {
+        _preview = null;
+        _error = 'Não foi possível abrir o arquivo. Tente novamente.';
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }

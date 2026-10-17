@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
                           obscure: true,
                           textInputAction: TextInputAction.done,
                           autofillHints: const [AutofillHints.password],
-                          validator: (v) => Validators.required(v, 'Senha'),
+                          validator: (v) => (v == null || v.isEmpty) ? 'Informe a senha' : null,
                           onSubmitted: (_) => _submit(),
                         ),
                         Align(

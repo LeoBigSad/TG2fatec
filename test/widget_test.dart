@@ -51,7 +51,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Informe o e-mail'), findsOneWidget);
-    expect(find.text('Senha obrigatório'), findsOneWidget);
+    expect(find.text('Informe a senha'), findsOneWidget);
   });
 
   testWidgets('após cadastro, abre a Home com as quatro abas', (tester) async {

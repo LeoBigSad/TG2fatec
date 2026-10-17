@@ -47,6 +47,8 @@ class FinanceReport {
 }
 
 abstract final class ReportExporter {
+  static const _rowsPerTable = 35;
+
   static Future<Uint8List> build(FinanceReport report, ReportFormat format) => switch (format) {
         ReportFormat.pdf => _pdf(report),
         ReportFormat.csv => Future.value(_csv(report)),
@@ -89,6 +91,9 @@ abstract final class ReportExporter {
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
+      // O padrão da biblioteca é 20 páginas; um relatório anual com milhares
+      // de transações ultrapassa esse limite.
+      maxPages: 1000,
       header: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
         pw.Text(r.title, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
         pw.Text('${r.userName} · gerado em ${Fmt.date(DateTime.now())}', style: cellStyle),
@@ -125,16 +130,25 @@ abstract final class ReportExporter {
         if (r.transactions.isEmpty)
           pw.Text('Nenhuma transação no período.', style: cellStyle)
         else
-          pw.TableHelper.fromTextArray(
-            headers: ['Data', 'Título', 'Categoria', 'Valor'],
-            headerStyle: headerStyle,
-            cellStyle: cellStyle,
-            cellAlignments: {3: pw.Alignment.centerRight},
-            data: [
-              for (final t in r.transactions)
-                [Fmt.date(t.date), t.title, r.categoryName(t.categoryId), Fmt.money(t.signedCents, signed: true)],
-            ],
-          ),
+          // Uma tabela única com milhares de linhas é relaida a cada página
+          // (custo quadrático); blocos menores mantêm a geração linear.
+          for (var i = 0; i < r.transactions.length; i += _rowsPerTable)
+            pw.TableHelper.fromTextArray(
+              headers: ['Data', 'Título', 'Categoria', 'Valor'],
+              headerStyle: headerStyle,
+              cellStyle: cellStyle,
+              columnWidths: const {
+                0: pw.FixedColumnWidth(62),
+                1: pw.FlexColumnWidth(3),
+                2: pw.FlexColumnWidth(2),
+                3: pw.FixedColumnWidth(80),
+              },
+              cellAlignments: {3: pw.Alignment.centerRight},
+              data: [
+                for (final t in r.transactions.skip(i).take(_rowsPerTable))
+                  [Fmt.date(t.date), t.title, r.categoryName(t.categoryId), Fmt.money(t.signedCents, signed: true)],
+              ],
+            ),
       ],
     ));
     return doc.save();
